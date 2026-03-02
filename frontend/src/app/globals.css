@@ -448,6 +448,198 @@ button:disabled {
   margin: 0 0 10px;
 }
 
+.tripsShell {
+  margin: 0 auto;
+  max-width: 1280px;
+  min-height: 100vh;
+  padding: 30px 20px 60px;
+  position: relative;
+}
+
+.tripsHeader {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.tripsHeader h1 {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(2rem, 4.6vw, 2.8rem);
+  margin: 4px 0 0;
+}
+
+.tripsHeaderMeta {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.emptyTripsPanel {
+  max-width: 520px;
+}
+
+.tripBubbleGrid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+}
+
+.tripBubble {
+  min-height: 220px;
+  position: relative;
+}
+
+.tripBubbleMain {
+  align-items: center;
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(150deg, #fff9ee 0%, #f2e8d2 100%);
+  border: 1px solid #d8ccb2;
+  border-radius: 28px;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  padding: 22px;
+  text-align: center;
+  width: 100%;
+}
+
+.tripBubbleMain:hover {
+  background: linear-gradient(150deg, #fff5e4 0%, #ecdcbf 100%);
+}
+
+.tripDestination {
+  font-family: var(--font-serif), serif;
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.tripDateRange {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.tripStatus {
+  background: #dff8f5;
+  border-radius: 999px;
+  color: var(--confirmed);
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin: 0;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.tripMenuWrap {
+  position: absolute;
+  right: 16px;
+  top: 12px;
+}
+
+.tripMenuButton {
+  background: #ffffffdd;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: #4c4539;
+  line-height: 1;
+  min-width: 34px;
+  padding: 6px 10px;
+}
+
+.tripMenuButton:hover {
+  background: #fff;
+}
+
+.tripMenu {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  z-index: 20;
+}
+
+.tripMenu button {
+  background: #fff7f3;
+  border: 1px solid #f1c7ba;
+  color: #972e2b;
+  white-space: nowrap;
+}
+
+.tripMenu button:hover {
+  background: #fbe5de;
+}
+
+.fabWrap {
+  bottom: 30px;
+  position: fixed;
+  right: 26px;
+  z-index: 30;
+}
+
+.fabButton {
+  border-radius: 999px;
+  box-shadow: 0 12px 24px rgba(18, 90, 84, 0.35);
+  font-size: 1.8rem;
+  height: 56px;
+  line-height: 1;
+  padding: 0;
+  width: 56px;
+}
+
+.fabTooltip {
+  background: #162824;
+  border-radius: 8px;
+  color: #f5faf8;
+  font-size: 0.78rem;
+  opacity: 0;
+  padding: 6px 8px;
+  pointer-events: none;
+  position: absolute;
+  right: 66px;
+  top: 16px;
+  transform: translateY(2px);
+  transition: opacity 180ms ease, transform 180ms ease;
+  white-space: nowrap;
+}
+
+.fabWrap:hover .fabTooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.modalBackdrop {
+  align-items: center;
+  background: rgba(18, 15, 11, 0.52);
+  display: grid;
+  inset: 0;
+  padding: 16px;
+  place-content: center;
+  position: fixed;
+  z-index: 50;
+}
+
+.modalCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  max-width: 420px;
+  padding: 20px;
+  width: 100%;
+}
+
+.modalCard h2 {
+  margin: 0;
+}
+
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 @media (max-width: 1024px) {
   .workspaceGrid {
     grid-template-columns: 1fr;
@@ -468,7 +660,15 @@ button:disabled {
     flex-direction: column;
   }
 
+  .tripsHeader {
+    flex-direction: column;
+  }
+
   .topBarMeta {
+    flex-wrap: wrap;
+  }
+
+  .tripsHeaderMeta {
     flex-wrap: wrap;
   }
 
@@ -479,5 +679,14 @@ button:disabled {
 
   .chatComposer {
     grid-template-columns: 1fr;
+  }
+
+  .tripBubbleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fabWrap {
+    bottom: 20px;
+    right: 16px;
   }
 }
