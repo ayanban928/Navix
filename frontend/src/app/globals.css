@@ -1,0 +1,483 @@
+:root {
+  --bg: #f2f0e8;
+  --surface: #fffef9;
+  --surface-alt: #f7f3e8;
+  --text: #1f1c16;
+  --muted: #6a6457;
+  --accent: #0f766e;
+  --accent-strong: #0b5a54;
+  --border: #d9d0bc;
+  --estimated: #92600e;
+  --confirmed: #116466;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: radial-gradient(circle at 0 0, #f9f5e6 0, #efe8d5 36%, #e8dfc9 100%);
+  color: var(--text);
+  font-family: var(--font-sans), sans-serif;
+  min-height: 100%;
+}
+
+.workspaceShell {
+  margin: 0 auto;
+  max-width: 1280px;
+  padding: 28px 20px 40px;
+}
+
+.topBar {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.topBar h1 {
+  font-family: var(--font-serif), serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1;
+  margin: 4px 0;
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.topBarMeta {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
+.statusBadge {
+  background: var(--accent);
+  border-radius: 999px;
+  color: #f4fffc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  text-transform: capitalize;
+}
+
+.userBadge {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.workspaceGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 380px minmax(0, 1fr);
+}
+
+.leftRail,
+.rightRail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(50, 44, 33, 0.08);
+  padding: 16px;
+}
+
+.panel h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.panelHeaderRow {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.chatPanel {
+  min-height: 500px;
+}
+
+.chatLog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.bubble {
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.bubble p {
+  margin: 0;
+}
+
+.bubble.assistant {
+  background: #e6f7f2;
+  border: 1px solid #b7e5da;
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: #f6e7cf;
+  border: 1px solid #e4c99f;
+}
+
+.chatComposer {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto;
+  margin-top: 12px;
+}
+
+.chatComposer input {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  min-width: 0;
+  padding: 10px;
+}
+
+button {
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 14px;
+}
+
+button:hover {
+  background: var(--accent-strong);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.ghostButton {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.ghostButton:hover {
+  background: #f0ebdf;
+}
+
+.resetButton {
+  width: 100%;
+}
+
+.metricsGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 10px;
+}
+
+.metricsGrid dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.metricsGrid dd {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 2px 0 0;
+}
+
+.detailLine {
+  color: var(--muted);
+  margin: 6px 0;
+}
+
+.changeList {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.changeList li {
+  margin-bottom: 6px;
+}
+
+.dayGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.dayCard {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.dayCard h3 {
+  margin: 0;
+}
+
+.dayTheme {
+  color: var(--muted);
+  margin: 4px 0 10px;
+}
+
+.dayCard ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dayCard li {
+  border-top: 1px dashed #c9bea6;
+  padding: 8px 0;
+}
+
+.dayCard li:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.activityHead {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.activityHead span:first-child {
+  font-weight: 600;
+}
+
+.statusPill {
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.statusPill.estimated {
+  background: #fff2cd;
+  color: var(--estimated);
+}
+
+.statusPill.confirmed {
+  background: #dff8f5;
+  color: var(--confirmed);
+}
+
+.ledgerList,
+.bookingList {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ledgerList li,
+.bookingList li {
+  align-items: center;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+}
+
+.ledgerList p,
+.bookingList p {
+  margin: 0;
+}
+
+.ledgerList small,
+.bookingList small {
+  color: var(--muted);
+}
+
+.expenseMeta,
+.bookingMeta {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bookingMeta a {
+  color: var(--accent-strong);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.dualPanel {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.authShell {
+  align-items: center;
+  display: grid;
+  min-height: 100vh;
+  padding: 18px;
+}
+
+.authCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(50, 44, 33, 0.1);
+  margin: 0 auto;
+  max-width: 440px;
+  padding: 24px;
+  width: 100%;
+}
+
+.authCard h1 {
+  font-family: var(--font-serif), serif;
+  margin: 4px 0 0;
+}
+
+.authSubtext {
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.authDemoHint {
+  background: #edf7f6;
+  border: 1px solid #b9dfdb;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  margin: 0 0 14px;
+  padding: 10px;
+}
+
+.authForm {
+  display: grid;
+  gap: 12px;
+}
+
+.authForm label {
+  color: var(--muted);
+  display: grid;
+  font-size: 0.9rem;
+  gap: 6px;
+}
+
+.authForm input {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  padding: 10px;
+}
+
+.authError {
+  color: #9f2136;
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.authSwitch {
+  color: var(--muted);
+  margin: 14px 0 0;
+}
+
+.authSwitch a {
+  color: var(--accent-strong);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.centerMessage {
+  align-items: center;
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+}
+
+.loadTripPanel {
+  margin: 70px auto 0;
+  max-width: 620px;
+}
+
+.tripLoaderRow {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr auto;
+  margin: 12px 0;
+}
+
+.tripLoaderRow input {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  padding: 10px;
+}
+
+.inWorkspace {
+  margin: 0 0 10px;
+}
+
+@media (max-width: 1024px) {
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .chatPanel {
+    min-height: auto;
+  }
+
+  .chatLog {
+    max-height: 280px;
+  }
+}
+
+@media (max-width: 720px) {
+  .topBar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .topBarMeta {
+    flex-wrap: wrap;
+  }
+
+  .dualPanel,
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .chatComposer {
+    grid-template-columns: 1fr;
+  }
+}
