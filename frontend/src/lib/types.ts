@@ -58,6 +58,15 @@ export interface Trip {
   status: "onboarding" | "planning" | "ready_to_book" | "active";
 }
 
+export interface TripSummary {
+  id: string;
+  destination: string;
+  startDate: string;
+  endDate: string;
+  status: Trip["status"];
+  projectedCost: number;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";

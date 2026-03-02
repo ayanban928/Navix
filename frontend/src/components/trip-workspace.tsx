@@ -11,15 +11,18 @@ import { StateChangeLog } from "@/components/state-change-log";
 import { TopBar } from "@/components/top-bar";
 import { TripOverview } from "@/components/trip-overview";
 import { fetchTrip, sendTripChatMessage } from "@/lib/api-client";
-import { DEMO_TOKEN, demoTrip, runDemoAgent } from "@/lib/demo-session";
+import { DEMO_TOKEN, runDemoAgent } from "@/lib/demo-session";
+import { getTripById, saveTrip } from "@/lib/trip-local-store";
 import type { ChatMessage, Trip } from "@/lib/types";
 
-export function TripWorkspace() {
+interface TripWorkspaceProps {
+  tripId: string;
+}
+
+export function TripWorkspace({ tripId }: TripWorkspaceProps) {
   const router = useRouter();
   const { token, email, username, logout } = useAuth();
 
-  const [tripIdInput, setTripIdInput] = useState("");
-  const [activeTripId, setActiveTripId] = useState<string | null>(null);
   const [trip, setTrip] = useState<Trip | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [changes, setChanges] = useState<string[]>([]);
@@ -29,24 +32,95 @@ export function TripWorkspace() {
 
   const isDemoSession = token === DEMO_TOKEN;
 
+  const userKey = useMemo(() => {
+    return (username || email || "guest").toLowerCase().replace(/[^a-z0-9_@.-]/g, "_");
+  }, [email, username]);
+
   useEffect(() => {
-    if (!isDemoSession || trip) {
+    if (!token) {
       return;
     }
 
-    setTrip(demoTrip);
-    setActiveTripId(demoTrip.id);
-    setMessages([
-      {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content:
-          "Demo account loaded. You can test dashboard interactions immediately. Try: 'confirm flight' or 'add food'.",
-        createdAt: new Date().toISOString()
+    let cancelled = false;
+
+    async function loadTrip() {
+      setIsLoadingTrip(true);
+      setError(null);
+
+      try {
+        if (isDemoSession) {
+          const demoStoredTrip = getTripById(userKey, tripId);
+          if (!demoStoredTrip) {
+            throw new Error("Trip not found. Return to Trips Dashboard and pick an available trip.");
+          }
+
+          if (cancelled) {
+            return;
+          }
+
+          setTrip(demoStoredTrip);
+          setMessages([
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content:
+                "Demo trip loaded. You can keep editing this itinerary and use chat to apply deterministic updates.",
+              createdAt: new Date().toISOString()
+            }
+          ]);
+          setChanges(["Loaded trip from local demo dashboard store."]);
+          return;
+        }
+
+        const result = await fetchTrip(tripId, token);
+        if (cancelled) {
+          return;
+        }
+
+        setTrip(result);
+        saveTrip(userKey, result);
+        setMessages([
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: `Trip ${result.id} loaded from backend source of truth.`,
+            createdAt: new Date().toISOString()
+          }
+        ]);
+        setChanges(["Loaded trip from backend source of truth."]);
+      } catch (loadError) {
+        const fallback = getTripById(userKey, tripId);
+
+        if (fallback && !cancelled) {
+          setTrip(fallback);
+          setMessages([
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: "Loaded locally cached trip copy.",
+              createdAt: new Date().toISOString()
+            }
+          ]);
+          setChanges(["Using locally saved trip state (backend fetch failed)."]);
+        }
+
+        if (!cancelled) {
+          const message = loadError instanceof Error ? loadError.message : "Failed to load trip.";
+          setError(message);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingTrip(false);
+        }
       }
-    ]);
-    setChanges(["Loaded demo trip snapshot for dashboard preview."]);
-  }, [isDemoSession, trip]);
+    }
+
+    void loadTrip();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isDemoSession, token, tripId, userKey]);
 
   const dateRange = useMemo(() => {
     if (!trip) {
@@ -66,38 +140,9 @@ export function TripWorkspace() {
     return "user";
   }, [email, username]);
 
-  async function handleLoadTrip() {
-    if (!token || !tripIdInput.trim()) {
-      return;
-    }
-
-    setIsLoadingTrip(true);
-    setError(null);
-
-    try {
-      const result = await fetchTrip(tripIdInput.trim(), token);
-      setTrip(result);
-      setActiveTripId(result.id);
-      setMessages([
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: `Trip ${result.id} loaded. Ask me to update the itinerary with explicit structured changes.`,
-          createdAt: new Date().toISOString()
-        }
-      ]);
-      setChanges(["Loaded trip from backend source of truth."]);
-    } catch (loadError) {
-      const message = loadError instanceof Error ? loadError.message : "Failed to load trip.";
-      setError(message);
-    } finally {
-      setIsLoadingTrip(false);
-    }
-  }
-
   async function handleSend(message: string) {
-    if (!token || !activeTripId || !trip) {
-      setError("Load a trip before sending chat updates.");
+    if (!token || !trip) {
+      setError("Trip is not available yet.");
       return;
     }
 
@@ -122,12 +167,13 @@ export function TripWorkspace() {
           createdAt: new Date().toISOString()
         };
         setTrip(result.updatedTrip);
+        saveTrip(userKey, result.updatedTrip);
         setChanges(result.stateChanges);
         setMessages((prev) => [...prev, assistantTurn]);
         return;
       }
 
-      const result = await sendTripChatMessage(activeTripId, message, token);
+      const result = await sendTripChatMessage(trip.id, message, token);
 
       const assistantTurn: ChatMessage = {
         id: crypto.randomUUID(),
@@ -137,6 +183,7 @@ export function TripWorkspace() {
       };
 
       setTrip(result.updatedTrip);
+      saveTrip(userKey, result.updatedTrip);
       setChanges(result.stateChanges);
       setMessages((prev) => [...prev, assistantTurn]);
     } catch (sendError) {
@@ -152,32 +199,8 @@ export function TripWorkspace() {
     router.replace("/login");
   }
 
-  if (!trip) {
-    return (
-      <main className="workspaceShell">
-        <section className="panel loadTripPanel">
-          <p className="eyebrow">Trip Bootstrap</p>
-          <h1>Load Existing Trip</h1>
-          <p className="detailLine">
-            Enter a trip ID from your backend to start planning. Or use demo login to see a seeded dashboard.
-          </p>
-          <div className="tripLoaderRow">
-            <input
-              onChange={(event) => setTripIdInput(event.target.value)}
-              placeholder="trip_123"
-              value={tripIdInput}
-            />
-            <button disabled={!tripIdInput.trim() || isLoadingTrip} onClick={handleLoadTrip} type="button">
-              {isLoadingTrip ? "Loading..." : "Load trip"}
-            </button>
-          </div>
-          {error ? <p className="authError">{error}</p> : null}
-          <button className="ghostButton" onClick={handleLogout} type="button">
-            Logout {userLabel ? `(${userLabel})` : ""}
-          </button>
-        </section>
-      </main>
-    );
+  if (!trip || isLoadingTrip) {
+    return <main className="centerMessage">Loading trip workspace...</main>;
   }
 
   return (
@@ -185,6 +208,7 @@ export function TripWorkspace() {
       <TopBar
         destination={trip.destination}
         dateRange={dateRange}
+        onBack={() => router.push("/app")}
         onLogout={handleLogout}
         status={trip.status}
         userLabel={userLabel}
