@@ -21,10 +21,30 @@ async function request<T>(path: string, init?: RequestInit, options?: ApiRequest
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(errorText || `Request failed with status ${response.status}`);
+    let message = errorText || `Request failed with status ${response.status}`;
+
+    try {
+      const parsed = JSON.parse(errorText) as { error?: string };
+      if (parsed.error) {
+        message = parsed.error;
+      }
+    } catch {
+      // Fall back to the raw response text when the server does not return JSON.
+    }
+
+    throw new Error(message);
   }
 
-  return (await response.json()) as T;
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const responseText = await response.text();
+  if (!responseText) {
+    return undefined as T;
+  }
+
+  return JSON.parse(responseText) as T;
 }
 
 export interface SignupRequest {
@@ -63,6 +83,25 @@ export async function login(payload: LoginRequest): Promise<AuthResponse> {
 
 export async function fetchTrip(tripId: string, token: string): Promise<Trip> {
   return request<Trip>(`/v1/trips/${tripId}`, { method: "GET" }, { token });
+}
+
+export async function listTrips(token: string): Promise<Trip[]> {
+  return request<Trip[]>("/v1/trips", { method: "GET" }, { token });
+}
+
+export async function createTrip(trip: Trip, token: string): Promise<Trip> {
+  return request<Trip>(
+    "/v1/trips",
+    {
+      method: "POST",
+      body: JSON.stringify(trip)
+    },
+    { token }
+  );
+}
+
+export async function deleteTrip(tripId: string, token: string): Promise<void> {
+  return request<void>(`/v1/trips/${tripId}`, { method: "DELETE" }, { token });
 }
 
 export async function sendTripChatMessage(

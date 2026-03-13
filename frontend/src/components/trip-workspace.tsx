@@ -11,7 +11,6 @@ import { StateChangeLog } from "@/components/state-change-log";
 import { TopBar } from "@/components/top-bar";
 import { TripOverview } from "@/components/trip-overview";
 import { fetchTrip, sendTripChatMessage } from "@/lib/api-client";
-import { DEMO_TOKEN, runDemoAgent } from "@/lib/demo-session";
 import { getTripById, saveTrip } from "@/lib/trip-local-store";
 import type { ChatMessage, Trip } from "@/lib/types";
 
@@ -30,8 +29,6 @@ export function TripWorkspace({ tripId }: TripWorkspaceProps) {
   const [isLoadingTrip, setIsLoadingTrip] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isDemoSession = token === DEMO_TOKEN;
-
   const userKey = useMemo(() => {
     return (username || email || "guest").toLowerCase().replace(/[^a-z0-9_@.-]/g, "_");
   }, [email, username]);
@@ -41,6 +38,8 @@ export function TripWorkspace({ tripId }: TripWorkspaceProps) {
       return;
     }
 
+    const sessionToken = token;
+
     let cancelled = false;
 
     async function loadTrip() {
@@ -48,31 +47,7 @@ export function TripWorkspace({ tripId }: TripWorkspaceProps) {
       setError(null);
 
       try {
-        if (isDemoSession) {
-          const demoStoredTrip = getTripById(userKey, tripId);
-          if (!demoStoredTrip) {
-            throw new Error("Trip not found. Return to Trips Dashboard and pick an available trip.");
-          }
-
-          if (cancelled) {
-            return;
-          }
-
-          setTrip(demoStoredTrip);
-          setMessages([
-            {
-              id: crypto.randomUUID(),
-              role: "assistant",
-              content:
-                "Demo trip loaded. You can keep editing this itinerary and use chat to apply deterministic updates.",
-              createdAt: new Date().toISOString()
-            }
-          ]);
-          setChanges(["Loaded trip from local demo dashboard store."]);
-          return;
-        }
-
-        const result = await fetchTrip(tripId, token);
+        const result = await fetchTrip(tripId, sessionToken);
         if (cancelled) {
           return;
         }
@@ -83,7 +58,7 @@ export function TripWorkspace({ tripId }: TripWorkspaceProps) {
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: `Trip ${result.id} loaded from backend source of truth.`,
+            content: `Trip ${result.destination} loaded from backend source of truth.`,
             createdAt: new Date().toISOString()
           }
         ]);
@@ -120,7 +95,7 @@ export function TripWorkspace({ tripId }: TripWorkspaceProps) {
     return () => {
       cancelled = true;
     };
-  }, [isDemoSession, token, tripId, userKey]);
+  }, [token, tripId, userKey]);
 
   const dateRange = useMemo(() => {
     if (!trip) {
@@ -158,21 +133,6 @@ export function TripWorkspace({ tripId }: TripWorkspaceProps) {
     setError(null);
 
     try {
-      if (isDemoSession) {
-        const result = runDemoAgent(message, trip);
-        const assistantTurn: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: result.assistantMessage,
-          createdAt: new Date().toISOString()
-        };
-        setTrip(result.updatedTrip);
-        saveTrip(userKey, result.updatedTrip);
-        setChanges(result.stateChanges);
-        setMessages((prev) => [...prev, assistantTurn]);
-        return;
-      }
-
       const result = await sendTripChatMessage(trip.id, message, token);
 
       const assistantTurn: ChatMessage = {

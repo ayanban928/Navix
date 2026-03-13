@@ -9,11 +9,14 @@ import {
   useState,
   type ReactNode
 } from "react";
-import { login as loginRequest, signup as signupRequest } from "@/lib/api-client";
+import {
+  type AuthResponse,
+  login as loginRequest,
+  signup as signupRequest
+} from "@/lib/api-client";
 import {
   DEMO_EMAIL,
   DEMO_PASSWORD,
-  DEMO_TOKEN,
   DEMO_USERNAME
 } from "@/lib/demo-session";
 import {
@@ -37,6 +40,30 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function ensureDemoAuth(): Promise<AuthResponse> {
+  try {
+    return await loginRequest({ identifier: DEMO_EMAIL, password: DEMO_PASSWORD });
+  } catch (loginError) {
+    try {
+      return await signupRequest({
+        username: DEMO_USERNAME,
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD
+      });
+    } catch (signupError) {
+      if (signupError instanceof Error && signupError.message === "Username or email already taken") {
+        return loginRequest({ identifier: DEMO_EMAIL, password: DEMO_PASSWORD });
+      }
+
+      if (loginError instanceof Error && loginError.message !== "Invalid credentials") {
+        throw loginError;
+      }
+
+      throw signupError;
+    }
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -56,15 +83,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password === DEMO_PASSWORD &&
       (normalized === DEMO_EMAIL.toLowerCase() || normalized === DEMO_USERNAME.toLowerCase());
 
+    let response: AuthResponse;
+
     if (demoMatch) {
-      setToken(DEMO_TOKEN);
-      setUsername(DEMO_USERNAME);
-      setEmail(DEMO_EMAIL);
-      writeAuthSession(DEMO_TOKEN, DEMO_USERNAME, DEMO_EMAIL);
-      return;
+      response = await ensureDemoAuth();
+    } else {
+      response = await loginRequest({ identifier, password });
     }
 
-    const response = await loginRequest({ identifier, password });
     setToken(response.accessToken);
     setUsername(response.user.username);
     setEmail(response.user.email);

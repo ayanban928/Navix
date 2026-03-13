@@ -1,4 +1,3 @@
-import { demoTrip } from "@/lib/demo-session";
 import type { Trip, TripSummary } from "@/lib/types";
 
 const SUMMARY_KEY_PREFIX = "navix_trips";
@@ -49,7 +48,7 @@ function dateString(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-function buildDefaultTrip(destination: string): Trip {
+export function buildDefaultTrip(destination: string): Trip {
   const start = addDays(new Date(), 30);
   const end = addDays(start, 4);
   const tripId = `trip_${Math.random().toString(36).slice(2, 10)}`;
@@ -94,7 +93,7 @@ function buildDefaultTrip(destination: string): Trip {
   };
 }
 
-export function listTripSummaries(userKey: string): TripSummary[] {
+function listTripSummaries(userKey: string): TripSummary[] {
   if (typeof window === "undefined") {
     return [];
   }
@@ -128,35 +127,3 @@ export function saveTrip(userKey: string, trip: Trip): void {
   window.localStorage.setItem(summaryStorageKey(userKey), JSON.stringify([nextSummary, ...withoutCurrent]));
 }
 
-export function deleteTrip(userKey: string, tripId: string): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.removeItem(tripStorageKey(userKey, tripId));
-  const next = listTripSummaries(userKey).filter((summary) => summary.id !== tripId);
-  window.localStorage.setItem(summaryStorageKey(userKey), JSON.stringify(next));
-}
-
-export function createTrip(userKey: string, input: NewTripInput): Trip {
-  const trip = buildDefaultTrip(input.destination);
-  saveTrip(userKey, trip);
-  return trip;
-}
-
-export function ensureDemoTrips(userKey: string): TripSummary[] {
-  const existing = listTripSummaries(userKey);
-  if (existing.length > 0) {
-    return existing;
-  }
-
-  const rome: Trip = JSON.parse(JSON.stringify(demoTrip)) as Trip;
-  saveTrip(userKey, rome);
-
-  const lisbon = buildDefaultTrip("Lisbon, Portugal");
-  const kyoto = buildDefaultTrip("Kyoto, Japan");
-  saveTrip(userKey, lisbon);
-  saveTrip(userKey, kyoto);
-
-  return listTripSummaries(userKey);
-}

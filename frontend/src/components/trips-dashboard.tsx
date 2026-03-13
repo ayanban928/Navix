@@ -3,9 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
-import { DEMO_TOKEN } from "@/lib/demo-session";
-import { createTrip, deleteTrip, ensureDemoTrips, listTripSummaries } from "@/lib/trip-local-store";
-import type { TripSummary } from "@/lib/types";
+import { createTrip, deleteTrip, listTrips } from "@/lib/api-client";
+import { buildDefaultTrip } from "@/lib/trip-local-store";
+import type { Trip, TripSummary } from "@/lib/types";
+
+function toTripSummary(trip: Trip): TripSummary {
+  return {
+    id: trip.id,
+    destination: trip.destination,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+    status: trip.status,
+    projectedCost: trip.projectedCost
+  };
+}
 
 export function TripsDashboard() {
   const router = useRouter();
@@ -15,10 +26,8 @@ export function TripsDashboard() {
   const [menuTripId, setMenuTripId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [destinationInput, setDestinationInput] = useState("");
-
-  const userKey = useMemo(() => {
-    return (username || email || "guest").toLowerCase().replace(/[^a-z0-9_@.-]/g, "_");
-  }, [email, username]);
+  const [isLoadingTrips, setIsLoadingTrips] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const userLabel = useMemo(() => {
     if (username) {
@@ -38,56 +47,86 @@ export function TripsDashboard() {
   }, [isAuthenticated, isReady, router]);
 
   useEffect(() => {
-    if (!isReady || !isAuthenticated) {
+    if (!isReady || !isAuthenticated || !token) {
       return;
     }
 
-    if (token === DEMO_TOKEN) {
-      setTrips(ensureDemoTrips(userKey));
-      return;
+    const sessionToken = token;
+
+    let cancelled = false;
+
+    async function loadTrips() {
+      setIsLoadingTrips(true);
+      setError(null);
+
+      try {
+        const result = await listTrips(sessionToken);
+        if (cancelled) {
+          return;
+        }
+
+        setTrips(result.map(toTripSummary));
+      } catch (loadError) {
+        if (cancelled) {
+          return;
+        }
+
+        const message = loadError instanceof Error ? loadError.message : "Failed to load trips.";
+        setError(message);
+      } finally {
+        if (!cancelled) {
+          setIsLoadingTrips(false);
+        }
+      }
     }
 
-    setTrips(listTripSummaries(userKey));
-  }, [isAuthenticated, isReady, token, userKey]);
+    void loadTrips();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, isReady, token]);
 
   function openTrip(tripId: string) {
     router.push(`/app/trips/${tripId}`);
   }
 
-  function handleDeleteTrip(trip: TripSummary) {
+  async function handleDeleteTrip(trip: TripSummary) {
     const confirmed = window.confirm(
       `Delete the trip to ${trip.destination}? This will remove the full planning state for this trip.`
     );
 
-    if (!confirmed) {
+    if (!confirmed || !token) {
       return;
     }
 
-    deleteTrip(userKey, trip.id);
-    setTrips((prev) => prev.filter((item) => item.id !== trip.id));
-    setMenuTripId(null);
+    try {
+      setError(null);
+      await deleteTrip(trip.id, token);
+      setTrips((prev) => prev.filter((item) => item.id !== trip.id));
+      setMenuTripId(null);
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : "Failed to delete trip.";
+      setError(message);
+    }
   }
 
-  function handleCreateTrip(event: React.FormEvent) {
+  async function handleCreateTrip(event: React.FormEvent) {
     event.preventDefault();
-    if (!destinationInput.trim()) {
+    if (!destinationInput.trim() || !token) {
       return;
     }
 
-    const newTrip = createTrip(userKey, { destination: destinationInput.trim() });
-    setTrips((prev) => [
-      {
-        id: newTrip.id,
-        destination: newTrip.destination,
-        startDate: newTrip.startDate,
-        endDate: newTrip.endDate,
-        status: newTrip.status,
-        projectedCost: newTrip.projectedCost
-      },
-      ...prev
-    ]);
-    setDestinationInput("");
-    setShowCreateModal(false);
+    try {
+      setError(null);
+      const newTrip = await createTrip(buildDefaultTrip(destinationInput.trim()), token);
+      setTrips((prev) => [toTripSummary(newTrip), ...prev.filter((trip) => trip.id !== newTrip.id)]);
+      setDestinationInput("");
+      setShowCreateModal(false);
+    } catch (createError) {
+      const message = createError instanceof Error ? createError.message : "Failed to create trip.";
+      setError(message);
+    }
   }
 
   function handleLogout() {
@@ -97,6 +136,10 @@ export function TripsDashboard() {
 
   if (!isReady || !isAuthenticated) {
     return <main className="centerMessage">Checking session...</main>;
+  }
+
+  if (isLoadingTrips) {
+    return <main className="centerMessage">Loading trips...</main>;
   }
 
   return (
@@ -114,6 +157,8 @@ export function TripsDashboard() {
           </button>
         </div>
       </header>
+
+      {error ? <p className="authError inWorkspace">{error}</p> : null}
 
       {trips.length === 0 ? (
         <section className="panel emptyTripsPanel">
