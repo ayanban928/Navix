@@ -44,8 +44,8 @@ async fn main() -> anyhow::Result<()> {
     let app = Router::new()
         .route("/v1/auth/signup",          post(auth::signup))
         .route("/v1/auth/login",           post(auth::login))
-        .route("/v1/trips",                post(trips::create_trip))
-        .route("/v1/trips/:trip_id",       get(trips::get_trip))
+        .route("/v1/trips",                get(trips::list_trips).post(trips::create_trip))
+        .route("/v1/trips/:trip_id",       get(trips::get_trip).delete(trips::delete_trip))
         .route("/v1/trips/:trip_id/chat",  post(chat::chat))
         .layer(cors)
         .with_state(state);
