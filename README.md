@@ -1,6 +1,7 @@
 # <p align="center">Navix</p>
 
 <p align="center">
+  Check out the website: 
   <a href="https://navixagents.netlify.app/login"><strong>Navix</strong></a>
 </p>
 
